@@ -9,11 +9,14 @@ const sauceCtrl = require ('../controllers/sauce')
 const auth = require ('../middleware/auth');
 const multer = require ('../middleware/multer-config')
 
+// On importe le middleware qui va vérifier que le fichier rentré est bien une image avec les bons mimetype
+const checkSauceFile = require ('../middleware/check-sauce-file')
+
 // Routes vers les différentes fonctions
 router.get('/', auth, sauceCtrl.findSauces); // Récupération des sauces
 router.get('/:id', auth, sauceCtrl.findOneSauce); // Récupération d'une sauce
-router.post('/', auth, multer, sauceCtrl.createSauce); // Création d'une sauce
-router.put('/:id', auth, multer, sauceCtrl.modifySauce); // Modification d'une sauce
+router.post('/', auth, multer, checkSauceFile, sauceCtrl.createSauce); // Création d'une sauce
+router.put('/:id', auth, multer, checkSauceFile, sauceCtrl.modifySauce); // Modification d'une sauce
 router.delete('/:id', auth, sauceCtrl.deleteSauce); // Suppression d'une sauce
 router.post('/:id/like', auth, sauceCtrl.likeDislikeSauce); // Like ou Dislike d'une sauce
 
