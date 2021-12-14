@@ -1,7 +1,7 @@
 // Controller où se trouve la logique métier liée à la gestion des sauces
 
 // On importe le model Sauce avec le schema mongoose pour traiter les données des sauces
-const Sauce = require('../models/sauce');
+const Sauce = require('../models/Sauce');
 
 // On importe le module "file system" pour gérer les téléchargements, modification et suppression d'images
 const fs = require('fs');
@@ -14,7 +14,7 @@ exports.findSauces = function(req, res, next) {
             res.status(200).json(sauces);
         })
         .catch(function(error){
-            res.status(400).json({error});
+            res.status(404).json({error});
         });
 };
 
@@ -60,31 +60,36 @@ exports.modifySauce = function(req, res, next) {
     // On cherche la sauce avec l'id présent dans la requête dans la bdd pour supprimer l'ancien fichier si il y a lieu d'être
     Sauce.findOne({_id: req.params.id })
         .then(function(sauce){
-            // Si il y a un nouveau fichier dans la requête, on supprime l'ancien fichier attaché à cette sauce
-            if (req.file){
-                const filename = sauce.imageUrl.split('/images')[1];
-                fs.unlink(`images/${filename}`, function(){
-                    return;
-                })
-            }
-            // Si il y a un nouveau fichier dans la requête, alors on charge les données et on change l'imageURL, 
-            // Sinon on charge les données normalement
-            const sauceObjet = req.file ? 
-            {
-                ...JSON.parse(req.body.sauce),
-                imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-            } : { ...req.body };
-            // On modifie les données de la sauce avec l'id donné dans la bdd avec les nouvelles données
-            Sauce.updateOne({_id : req.params.id},{...sauceObjet, _id : req.params.id})
-                .then(function(){
-                    res.status(200).json({ message : "Sauce modifiée !"});
-                })
-                .catch(function(error){
-                    res.status(404).json({error});
-                });
+            // Si l'id de l'utilisateur connecté est l'id à l'origine de la création de la sauce, on continue, sinon on renvoie une erreur
+            if (req.body.userId == sauce.userId) {
+                // Si il y a un nouveau fichier dans la requête, on supprime l'ancien fichier attaché à cette sauce
+                if (req.file){
+                    const filename = sauce.imageUrl.split('/images')[1];
+                    fs.unlink(`images/${filename}`, function(){
+                        return;
+                    })
+                }
+                // Si il y a un nouveau fichier dans la requête, alors on charge les données et on change l'imageURL, 
+                // Sinon on charge les données normalement
+                const sauceObjet = req.file ? 
+                {
+                    ...JSON.parse(req.body.sauce),
+                    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+                } : { ...req.body };
+                // On modifie les données de la sauce avec l'id donné dans la bdd avec les nouvelles données
+                Sauce.updateOne({_id : req.params.id},{...sauceObjet, _id : req.params.id})
+                    .then(function(){
+                        res.status(200).json({ message : "Sauce modifiée !"});
+                    })
+                    .catch(function(error){
+                        res.status(500).json({error});
+                    });
+            } else {
+                res.status(400).json({message : 'Impossible de faire cette action'})
+            }  
         })
         .catch(function(error){
-            res.status(400).json({ message: 'Sauce non trouvée' })
+            res.status(500).json({ message: 'Sauce non trouvée' })
         })
     
 };
@@ -94,19 +99,24 @@ exports.deleteSauce = function(req, res, next) {
     // On cherche la sauce avec l'id présent dans la requête dans la bdd pour supprimer l'ancien fichier
     Sauce.findOne({ _id: req.params.id })
         .then(function(sauce){
-            // On récupère l'url de l'image de la sauce et on split pour avoir uniquement le nom du fichier
-            const filename = sauce.imageUrl.split('/images')[1];
-            // Avec ce nom de fichier on peut supprimer l'image avec unlink
-            fs.unlink(`images/${filename}`, function(){
-                // Une fois le fichier supprimé, on peut supprimer la sauce de la bdd
-                Sauce.deleteOne({ _id: req.params.id })
-                .then(function() {
-                    res.status(200).json({ message: 'Objet supprimé !'})
+            // Si l'id de l'utilisateur connecté est l'id à l'origine de la création de la sauce, on continue, sinon on renvoie une erreur
+            if (req.body.userId == sauce.userId) {
+                // On récupère l'url de l'image de la sauce et on split pour avoir uniquement le nom du fichier
+                const filename = sauce.imageUrl.split('/images')[1];
+                // Avec ce nom de fichier on peut supprimer l'image avec unlink
+                fs.unlink(`images/${filename}`, function(){
+                    // Une fois le fichier supprimé, on peut supprimer la sauce de la bdd
+                    Sauce.deleteOne({ _id: req.params.id })
+                    .then(function() {
+                        res.status(200).json({ message: 'Saucé supprimée !'})
+                    })
+                    .catch(function(error){
+                        res.status(500).json({ error })
+                    });
                 })
-                .catch(function(error){
-                    res.status(400).json({ error })
-                });
-            })
+            } else {
+                res.status(400).json({message : 'Impossible de faire cette action'})
+            }  
         })
         .catch(function(error){
             res.status(500).json({ error })
