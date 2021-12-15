@@ -61,7 +61,7 @@ exports.modifySauce = function(req, res, next) {
     Sauce.findOne({_id: req.params.id })
         .then(function(sauce){
             // Si l'id de l'utilisateur connecté est l'id à l'origine de la création de la sauce, on continue, sinon on renvoie une erreur
-            if (req.body.userId == sauce.userId) {
+            if (req.userId == sauce.userId) {
                 // Si il y a un nouveau fichier dans la requête, on supprime l'ancien fichier attaché à cette sauce
                 if (req.file){
                     const filename = sauce.imageUrl.split('/images')[1];
@@ -100,7 +100,7 @@ exports.deleteSauce = function(req, res, next) {
     Sauce.findOne({ _id: req.params.id })
         .then(function(sauce){
             // Si l'id de l'utilisateur connecté est l'id à l'origine de la création de la sauce, on continue, sinon on renvoie une erreur
-            if (req.body.userId == sauce.userId) {
+            if (req.userId == sauce.userId) {
                 // On récupère l'url de l'image de la sauce et on split pour avoir uniquement le nom du fichier
                 const filename = sauce.imageUrl.split('/images')[1];
                 // Avec ce nom de fichier on peut supprimer l'image avec unlink

@@ -9,6 +9,7 @@ module.exports = function(req, res, next){
         const token = req.headers.authorization.split(' ')[1]; // On récupère le token dans les headers
         const decodedToken = jwt.verify(token, process.env.SECRET_TOKEN); // On décripte le token pour avoir les informations que l'on veut
         const userId = decodedToken.userId; 
+        req.userId = userId;
         if (req.body.userId && req.body.userId !== userId){ // On compare les deux userId
             throw "User Id non valable";
         } else{
